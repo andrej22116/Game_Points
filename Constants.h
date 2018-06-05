@@ -1,8 +1,9 @@
 #pragma once
 
-const int g_freeBorderSone = 5;
+const int g_freeBorderSone = 20;
 const int g_CellSize = 40;
-const int g_PointRadius = 3;
+const int g_PointRadius = 5;
+const int g_PointBigRadius = 8;
 
 const int g_BaseLineWidth = 1;
 const int g_BorderLineWidth = 3;

@@ -13,34 +13,37 @@ struct RenderInstruments {
 	HBRUSH hBlackBrush;
 	HBRUSH hRedBrush;
 	HBRUSH hBlueBrush;
+
+	HBRUSH hGrayBrush;
 } g_RenderInstruments;
 
 
 void copyStaticBuffer(StaticBufferPtr& to, StaticBufferPtr& from);
-void copyStaticBuffer(HDC hDC_to, StaticBufferPtr& from);
+void copyStaticBuffer(HDC hDC_to, StaticBufferPtr& fromm, int x, int y);
 void initialDrawField(RenderContext& renderContext, GamePtr& game);
 void drawLine(HDC hDC, int start_x, int start_y, int end_x, int end_y);
+void drawPoints(HDC hDC, GamePtr& game);
+void drawPoint(HDC hDC, int x, int y, PointColor color);
 
 
-void releaseStaticBuffer(StaticBuffer& buffer)
+void releaseStaticBuffer(StaticBuffer* buffer)
 {
-	DeleteDC(buffer.hDC);
-	DeleteObject(buffer.hBmp);
+	DeleteDC(buffer->hDC);
+	DeleteObject(buffer->hBmp);
 
-	buffer.hDC = 0;
-	buffer.hBmp = 0;
+	buffer->hDC = 0;
+	buffer->hBmp = 0;
 }
 
-StaticBufferPtr makeStaticBuffer(HDC hBaseDC, GamePtr& game)
+StaticBufferPtr makeStaticBuffer(HDC hBaseDC, int width, int height)
 {
 	auto buffer = StaticBufferPtr(new StaticBuffer(), releaseStaticBuffer);
 
-	buffer->width = g_freeBorderSone * 2 + g_CellSize * (game->width - 1) + (g_PointRadius * 2) * game->width;
-	buffer->height = g_freeBorderSone * 2 + g_CellSize * (game->height - 1) + (g_PointRadius * 2) * game->height;
-
+	buffer->width = width;
+	buffer->height = height;
 	
 	buffer->hDC = CreateCompatibleDC(hBaseDC);
-	buffer->hBmp = CreateCompatibleBitmap(buffer->hDC, buffer->width, buffer->height);
+	buffer->hBmp = CreateCompatibleBitmap(hBaseDC, buffer->width, buffer->height);
 	SelectObject(buffer->hDC, buffer->hBmp);
 
 	return buffer;
@@ -57,11 +60,34 @@ RenderContext makeRenderContext(HWND hWnd, GamePtr& game)
 	renderCtx.hWnd = hWnd;
 	HDC hBaseDC = GetDC(hWnd);
 	renderCtx.hBaseDC = hBaseDC;
-	renderCtx.baseBuffer = makeStaticBuffer(hBaseDC, game);
-	renderCtx.activeBuffer = makeStaticBuffer(hBaseDC, game);
+
+	int gameBufferWidth = (g_freeBorderSone * 2) + g_CellSize * (game->width - 1);
+	int gameBufferHeight = (g_freeBorderSone * 2) + g_CellSize * (game->height - 1);
+	renderCtx.baseBuffer = makeStaticBuffer(hBaseDC, gameBufferWidth, gameBufferHeight);
+	renderCtx.activeBuffer = makeStaticBuffer(hBaseDC, gameBufferWidth, gameBufferHeight);
+
+	GetClientRect(hWnd, &renderCtx.clientRect);
+	renderCtx.screenBuffer = makeStaticBuffer(hBaseDC, renderCtx.clientRect.right, renderCtx.clientRect.bottom);
 
 	initialDrawField(renderCtx, game);
 	ReleaseDC(hWnd, hBaseDC);
+
+	return renderCtx;
+}
+
+void updateScreenSize(RenderContext& renderContext)
+{
+	GetClientRect(renderContext.hWnd, &renderContext.clientRect);
+	HDC hBaseDC = GetDC(renderContext.hWnd);
+	renderContext.screenBuffer = makeStaticBuffer(
+		hBaseDC, 
+		renderContext.clientRect.right,
+		renderContext.clientRect.bottom
+	);
+	ReleaseDC(renderContext.hWnd, hBaseDC);
+
+	renderContext.fieldPos_x = renderContext.clientRect.right / 2 - renderContext.baseBuffer->width / 2;
+	renderContext.fieldPos_y = renderContext.clientRect.bottom / 2 - renderContext.baseBuffer->height / 2;
 }
 
 
@@ -73,16 +99,56 @@ void drawLine(HDC hDC, int start_x, int start_y, int end_x, int end_y)
 	MoveToEx(hDC, point.x, point.y, nullptr);
 }
 
+inline void drawPoint(HDC hDC, int x, int y, PointColor color)
+{
+	int radius = g_PointRadius;
+	switch (color)
+	{
+	case Color_Neutral: {
+		SelectObject(hDC, g_RenderInstruments.hWhiteBrush);
+		SelectObject(hDC, g_RenderInstruments.hBlackPen);
+	} break;
+	case Color_Red: {
+		radius = g_PointBigRadius;
+		SelectObject(hDC, g_RenderInstruments.hRedBrush);
+		SelectObject(hDC, g_RenderInstruments.hRedPen);
+	} break;
+	case Color_Blue: {
+		radius = g_PointBigRadius;
+		SelectObject(hDC, g_RenderInstruments.hBlueBrush);
+		SelectObject(hDC, g_RenderInstruments.hBluePen);
+	} break;
+	}
+
+	Ellipse(hDC, x - radius, y - radius, x + radius + 1, y + radius + 1);
+}
+
+void drawPoints(HDC hDC, GamePtr& game)
+{
+	int y = g_freeBorderSone;
+	for (int point_y = 0; point_y < game->height; point_y++)
+	{
+		int x = g_freeBorderSone;
+		for (int point_x = 0; point_x < game->width; point_x++)
+		{
+			drawPoint(hDC, x, y, game->points[point_y][point_x].color);
+			x += g_CellSize;
+		}
+		y += g_CellSize;
+	}
+}
+
 void initialDrawField(RenderContext& renderContext, GamePtr& game)
 {
 	SelectObject(renderContext.baseBuffer->hDC, g_RenderInstruments.hBlackPen);
 	SelectObject(renderContext.baseBuffer->hDC, g_RenderInstruments.hWhiteBrush);
 
 	RECT rect;
+	rect.left = rect.top = 0;
 	rect.right = renderContext.baseBuffer->width;
 	rect.bottom = renderContext.baseBuffer->height;
 
-	FillRect(renderContext.baseBuffer->hDC, &rect, g_RenderInstruments.hWhiteBrush);
+	FillRect(renderContext.baseBuffer->hDC, &rect, g_RenderInstruments.hGrayBrush);
 
 	int start_x = g_freeBorderSone;
 	int end_x = renderContext.baseBuffer->width - g_freeBorderSone;
@@ -104,18 +170,7 @@ void initialDrawField(RenderContext& renderContext, GamePtr& game)
 		y += g_CellSize;
 	}
 
-	int pointWidth = g_PointRadius * 2;
-	y = start_y - g_PointRadius;
-	for (int point_y = 0; point_y < game->height; point_y++)
-	{
-		x = start_x - g_PointRadius;
-		for (int point_x = 0; point_x < game->width; point_x++)
-		{
-			Ellipse(renderContext.baseBuffer->hDC, x, y, x + pointWidth, y + pointWidth);
-			x += g_CellSize;
-		}
-		y += g_CellSize;
-	}
+	drawPoints(renderContext.baseBuffer->hDC, game);
 }
 
 void createPensAndBrushes()
@@ -127,11 +182,13 @@ void createPensAndBrushes()
 	g_RenderInstruments.hBlackPen = CreatePen(PS_SOLID, g_BaseLineWidth, RGB(0, 0, 0));
 	g_RenderInstruments.hRedPen = CreatePen(PS_SOLID, g_BorderLineWidth, g_RedColor);
 	g_RenderInstruments.hBluePen = CreatePen(PS_SOLID, g_BorderLineWidth, g_BlueColor);
-	
+
 	g_RenderInstruments.hWhiteBrush = CreateSolidBrush(RGB(255, 255, 255));
 	g_RenderInstruments.hBlackBrush = CreateSolidBrush(RGB(0, 0, 0));
-	g_RenderInstruments.hRedBrush = CreateHatchBrush(HS_DIAGCROSS, g_RedFillColor);
-	g_RenderInstruments.hBlueBrush = CreateSolidBrush(HS_DIAGCROSS, g_BlueFillColor);
+	g_RenderInstruments.hRedBrush = CreateSolidBrush(g_RedFillColor);
+	g_RenderInstruments.hBlueBrush = CreateSolidBrush(g_BlueFillColor);
+
+	g_RenderInstruments.hGrayBrush = CreateSolidBrush(RGB(125, 125, 140));
 }
 
 void destroyPensAndBrushes()
@@ -148,27 +205,41 @@ void destroyPensAndBrushes()
 	DeleteObject(g_RenderInstruments.hBlackBrush);
 	DeleteObject(g_RenderInstruments.hRedBrush);
 	DeleteObject(g_RenderInstruments.hBlueBrush);
+
+	DeleteObject(g_RenderInstruments.hGrayBrush);
 }
 
 
 void beginPaint(RenderContext& renderContext)
 {
+	FillRect(renderContext.screenBuffer->hDC, &renderContext.clientRect, g_RenderInstruments.hGrayBrush);
 	renderContext.hBaseDC = BeginPaint(renderContext.hWnd, &renderContext.ps);
 	copyStaticBuffer(renderContext.activeBuffer, renderContext.baseBuffer);
 }
 
 void endPaint(RenderContext& renderContext)
 {
-	copyStaticBuffer(renderContext.hBaseDC, renderContext.baseBuffer);
+	copyStaticBuffer(renderContext.screenBuffer->hDC, renderContext.activeBuffer,
+		renderContext.fieldPos_x, renderContext.fieldPos_y);
+	copyStaticBuffer(renderContext.hBaseDC, renderContext.screenBuffer, 0, 0);
 	EndPaint(renderContext.hWnd, &renderContext.ps);
 }
 
 void copyStaticBuffer(StaticBufferPtr& to, StaticBufferPtr& from)
 {
-	BitBlt(to->hDC, 0, 0, to->width, to->width, from->hDC, 0, 0, SRCCOPY);
+	BitBlt(to->hDC, 0, 0, to->width, to->height, from->hDC, 0, 0, SRCCOPY);
 }
 
-void copyStaticBuffer(HDC hDC_to, StaticBufferPtr& from)
+void copyStaticBuffer(HDC hDC_to, StaticBufferPtr& from, int x, int y)
 {
-	BitBlt(hDC_to, 0, 0, from->width, from->width, from->hDC, 0, 0, SRCCOPY);
+	BitBlt(hDC_to, x, y, from->width, from->height, from->hDC, 0, 0, SRCCOPY);
+}
+
+void repaintPoint(RenderContext& renderContext, int x, int y, PointColor color)
+{
+	int pos_x = g_freeBorderSone + x * g_CellSize;
+	int pos_y = g_freeBorderSone + y * g_CellSize;
+
+	drawPoint(renderContext.baseBuffer->hDC, pos_x, pos_y, color);
+	InvalidateRect(renderContext.hWnd, nullptr, false);
 }
