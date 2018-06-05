@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Исходные файлы">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Файлы ресурсов">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Исходные файлы\DataStructures">
+      <UniqueIdentifier>{fc42b9b8-3422-4f8c-98b1-473d96b7b42f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\Свалка">
+      <UniqueIdentifier>{e6c02eeb-93fc-4f81-8c2b-bc7f8efdbf07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\Renderer">
+      <UniqueIdentifier>{e36c9867-cdc1-4657-aeb8-36c464776c44}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\GameLogick">
+      <UniqueIdentifier>{e27244ac-7bf7-4f38-a42d-81c4772e85bc}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="datastructures.h">
+      <Filter>Исходные файлы\DataStructures</Filter>
+    </ClInclude>
+    <ClInclude Include="Coptyug_Points.h">
+      <Filter>Исходные файлы\Свалка</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>Исходные файлы\Свалка</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Исходные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="Render.h">
+      <Filter>Исходные файлы\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="GameLogick.h">
+      <Filter>Исходные файлы\GameLogick</Filter>
+    </ClInclude>
+    <ClInclude Include="Constants.h">
+      <Filter>Исходные файлы</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Coptyug_Points.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="datastructures.cpp">
+      <Filter>Исходные файлы\DataStructures</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Исходные файлы\Свалка</Filter>
+    </ClCompile>
+    <ClCompile Include="Render.cpp">
+      <Filter>Исходные файлы\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="GameLogick.cpp">
+      <Filter>Исходные файлы\GameLogick</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
