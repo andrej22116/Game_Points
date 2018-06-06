@@ -62,50 +62,168 @@ bool mouseClickProcessing(GamePtr& game)
 	return true;
 }
 
-bool testOnClose(GamePtr& game)
+
+std::vector<std::pair<int, int>> checkingExistenceOfRing(GamePtr& game)
 {
+	using Point = std::pair<int, int>;
+	Point firstSuspectPoint = game->mouseHover;
 	PointColor color = game->points[game->mouseHover.second][game->mouseHover.first].color;
+	std::stack<Point> suspectedPoints;
+	std::stack<Point> ololoTheWay;
+	std::stack<Point> backWayPoints;
+	std::set<Point> checkedPoints;
 
-	using Pos = std::pair<int, int>;
-	std::set<Pos> checkedPoints;
-	std::stack<std::pair<Pos, int>> pointsStack;
-	pointsStack.push({ game->mouseHover, 1 });
-
-	while (!pointsStack.empty())
+	suspectedPoints.push(firstSuspectPoint);
+	while (!suspectedPoints.empty())
 	{
-		auto cords = pointsStack.top();
-		pointsStack.pop();
+		auto point = suspectedPoints.top();
+		suspectedPoints.pop();
 
-		int x = cords.first.first;
-		int y = cords.first.second;
-		int mass = cords.second;
+		Point lastPoint;
+		if (backWayPoints.empty())
+		{
+			lastPoint = { -1, -1 };
+		}
+		else
+		{
+			lastPoint = backWayPoints.top();
+			backWayPoints.pop();
+		}
+
+		int x = point.first;
+		int y = point.second;
 
 		if (x < 0 || x >= game->width
 			|| y < 0 || y >= game->height
 			|| game->points[y][x].color != color)
 		{
+			ololoTheWay.pop();
 			continue;
 		}
 
-		if (checkedPoints.size() > 3 && game->mouseHover == cords.first)
+		if (point == firstSuspectPoint && backWayPoints.size() > 3)
 		{
-			return true;
-		}
-
-		if (checkedPoints.find(cords.first) != checkedPoints.end())
-		{
-			continue;
-		}
-		checkedPoints.insert(cords.first);
-
-		for (int i = -1; i <= 1; i++)
-		{
-			for (int j = -1; j <= 1; j++)
+			std::vector<std::pair<int, int>> res;
+			while (!ololoTheWay.empty())
 			{
-				pointsStack.push({ { x - 1, y - 1 }, mass + 1 });
+				point = ololoTheWay.top();
+				ololoTheWay.pop();
+				if (game->points[point.second][point.first].color == color && checkedPoints.find(point) != checkedPoints.end())
+				{
+					checkedPoints.erase(point);
+					res.push_back(point);
+				}
+			}
+			return res;
+		}
+
+		if (checkedPoints.find(point) != checkedPoints.end())
+		{
+			ololoTheWay.pop();
+			continue;
+		}
+		checkedPoints.insert(point);
+
+		for (int offset_y = -1; offset_y <= 1; offset_y++)
+		{
+			for (int offset_x = -1; offset_x <= 1; offset_x++)
+			{
+				if ((offset_x == offset_y && offset_y == 0)
+					|| Point(x + offset_x, y + offset_y) == lastPoint)
+				{
+					continue;
+				}
+				suspectedPoints.push({ x + offset_x, y + offset_y });
+				ololoTheWay.push(point);
+				backWayPoints.push(point);
 			}
 		}
 	}
 
-	return false;
+	return {};
 }
+
+void modifyExistenceOfRing(std::vector<std::pair<int, int>>& way)
+{
+	for (int i = 0; i < way.size() - 2;)
+	{
+		if ((way[i].second == way[i + 1].second && way[i + 1].first == way[i + 2].first)
+			|| (way[i].first == way[i + 1].first && way[i + 1].second == way[i + 2].second))
+		{
+			way.erase(way.begin() + i + 1);
+		}
+		else
+		{
+			i++;
+		}
+	}
+
+	way.push_back(way[0]);
+}
+
+
+std::vector<std::pair<int, int>> findOtherColors(GamePtr& game, std::vector<std::pair<int, int>>& points)
+{
+	auto max = points[0];
+
+	for (int i = 1; i < points.size(); i++)
+	{
+		if (points[i].second > max.second)
+		{
+			max = points[i];
+		}
+	}
+
+	max.second--;
+
+	using Point = std::pair<int, int>;
+	PointColor color = game->points[game->mouseHover.second][game->mouseHover.first].color;
+	std::queue<Point> suspectPoints;
+	std::set<Point> checkedPoints;
+	suspectPoints.push(max);
+
+	std::vector<Point> res;
+
+	while (!suspectPoints.empty())
+	{
+		auto point = suspectPoints.front();
+		suspectPoints.pop();
+
+		int x = point.first;
+		int y = point.second;
+
+		if (x < 0 || x >= game->width
+			|| y < 0 || y >= game->height
+			|| game->points[y][x].color == color)
+		{
+			continue;
+		}
+
+		if (checkedPoints.find(point) != checkedPoints.end())
+		{
+			continue;
+		}
+		checkedPoints.insert(point);
+
+		if (game->points[y][x].color != Color_Neutral)
+		{
+			res.push_back(point);
+		}
+
+		for (int offset_y = -1; offset_y <= 1; offset_y++)
+		{
+			for (int offset_x = -1; offset_x <= 1; offset_x++)
+			{
+				if (offset_x == offset_y && offset_y == 0)
+				{
+					continue;
+				}
+				suspectPoints.push({ x + offset_x, y + offset_y });
+			}
+		}
+	}
+
+	return res;
+}
+
+
