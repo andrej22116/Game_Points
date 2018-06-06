@@ -54,9 +54,8 @@ bool mouseClickProcessing(GamePtr& game)
 	int x = game->mouseHover.first;
 	int y = game->mouseHover.second;
 
-	if (!game->points[y][x].isFree) { return false;	}
+	if (game->points[y][x].color || game->points[y][x].whoCaptured) { return false;	}
 
-	game->points[y][x].isFree = false;
 	game->points[y][x].color = game->whoseMove;
 	game->points[y][x].whoCaptured = game->whoseMove;
 
@@ -81,7 +80,7 @@ std::vector<std::pair<int, int>> checkingExistenceOfRing(GamePtr& game)
 		{
 			return false;
 		}
-		if (game->points[y][x].isFree 
+		if (!game->points[y][x].isFree 
 			|| game->points[y][x].color != color
 			|| game->points[y][x].whoCaptured != color)
 		{
@@ -104,23 +103,13 @@ std::vector<std::pair<int, int>> checkingExistenceOfRing(GamePtr& game)
 		else
 		{
 			lastPoint = backWayPoints.top();
-			//backWayPoints.pop();
+			backWayPoints.pop();
 		}
 
 		int x = point.first;
 		int y = point.second;
 
-		if (x < 0 || x >= game->width
-			|| y < 0 || y >= game->height
-			|| game->points[y][x].color != color
-			|| game->points[y][x].whoCaptured != color)
-		{
-			backWayPoints.pop();
-			ololoTheWay.pop();
-			continue;
-		}
-
-		if (point == firstSuspectPoint && backWayPoints.size() > 3)
+		if (point == firstSuspectPoint && checkedPoints.size() > 3)
 		{
 			std::vector<std::pair<int, int>> res;
 			while (!ololoTheWay.empty())
@@ -150,20 +139,44 @@ std::vector<std::pair<int, int>> checkingExistenceOfRing(GamePtr& game)
 		}
 		checkedPoints.insert(point);
 
+		bool hasFirstPoint = false;
+		Point firstPoint;
+		bool hasNextPoints = false;
 		for (int offset_y = -1; offset_y <= 1; offset_y++)
 		{
 			for (int offset_x = -1; offset_x <= 1; offset_x++)
 			{
+				Point nextPoint(x + offset_x, y + offset_y);
 				if ((!isFree(x + offset_x, y + offset_y))
 					|| (offset_x == offset_y && offset_y == 0)
-					|| (Point(x + offset_x, y + offset_y) == lastPoint))
+					|| (nextPoint == lastPoint))
 				{
 					continue;
 				}
-				suspectedPoints.push({ x + offset_x, y + offset_y });
+				if (nextPoint == firstSuspectPoint)
+				{
+					hasNextPoints = true;
+					firstPoint = nextPoint;
+					hasFirstPoint = true;
+					continue;
+				}
+				hasNextPoints = true;
+				suspectedPoints.push(nextPoint);	
 				ololoTheWay.push(point);
 				backWayPoints.push(point);
 			}
+		}
+
+		if (!hasNextPoints && !ololoTheWay.empty())
+		{
+			ololoTheWay.pop();
+		}
+
+		if (hasFirstPoint)
+		{
+			suspectedPoints.push(firstPoint);
+			ololoTheWay.push(point);
+			backWayPoints.push(point);
 		}
 	}
 
@@ -178,6 +191,11 @@ void modifyExistenceOfRing(std::vector<std::pair<int, int>>& way)
 			|| (way[i].first == way[i + 1].first && way[i + 1].second == way[i + 2].second))
 		{
 			way.erase(way.begin() + i + 1);
+		}
+		else if ((way[i].first == way[i + 2].first && way[i].second == way[i + 1].second)
+			|| (way[i].first == way[i + 2].first && way[i + 1].second == way[i + 2].second))
+		{
+			way.erase(way.begin() + i + 1, way.begin() + i + 2);
 		}
 		else
 		{
@@ -209,16 +227,19 @@ std::vector<std::pair<int, int>> findOtherColors(GamePtr& game, std::vector<std:
 	std::set<Point> checkedPoints;
 	suspectPoints.push(max);
 
-	std::vector<Point> res;
+	if (game->points[max.second][max.first].color == color) return {};
 
-	auto isFree = [&game, color](int x, int y) -> bool
+	std::vector<Point> res;
+	std::set<Point> setOfPoints(points.begin(), points.end());
+
+	auto isFree = [&game, color, setOfPoints](int x, int y) -> bool
 	{
 		if (x < 0 || x >= game->width
 			|| y < 0 || y >= game->height)
 		{
 			return false;
 		}
-		if (game->points[y][x].color == color)
+		if ((game->points[y][x].color == color && game->points[y][x].isFree) && setOfPoints.find({ x, y }) != setOfPoints.end())
 		{
 			return false;
 		}
@@ -244,11 +265,9 @@ std::vector<std::pair<int, int>> findOtherColors(GamePtr& game, std::vector<std:
 		}
 		checkedPoints.insert(point);
 
-		if (game->points[y][x].color != Color_Neutral)
-		{
-			res.push_back(point);
-			game->points[y][x].whoCaptured = color;
-		}
+		game->points[y][x].whoCaptured = color;
+		game->points[y][x].isFree = false;
+		res.push_back(point);
 
 		bool freeMatrix[3][3] = { false };
 		for (int offset_y = -1; offset_y <= 1; offset_y++)
