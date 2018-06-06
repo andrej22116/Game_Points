@@ -58,6 +58,7 @@ bool mouseClickProcessing(GamePtr& game)
 
 	game->points[y][x].isFree = false;
 	game->points[y][x].color = game->whoseMove;
+	game->points[y][x].whoCaptured = game->whoseMove;
 
 	return true;
 }
@@ -73,6 +74,22 @@ std::vector<std::pair<int, int>> checkingExistenceOfRing(GamePtr& game)
 	std::stack<Point> backWayPoints;
 	std::set<Point> checkedPoints;
 
+	auto isFree = [&game, color](int x, int y) -> bool
+	{
+		if (x < 0 || x >= game->width
+			|| y < 0 || y >= game->height)
+		{
+			return false;
+		}
+		if (game->points[y][x].isFree 
+			|| game->points[y][x].color != color
+			|| game->points[y][x].whoCaptured != color)
+		{
+			return false;
+		}
+		return true;
+	};
+
 	suspectedPoints.push(firstSuspectPoint);
 	while (!suspectedPoints.empty())
 	{
@@ -87,7 +104,7 @@ std::vector<std::pair<int, int>> checkingExistenceOfRing(GamePtr& game)
 		else
 		{
 			lastPoint = backWayPoints.top();
-			backWayPoints.pop();
+			//backWayPoints.pop();
 		}
 
 		int x = point.first;
@@ -95,8 +112,10 @@ std::vector<std::pair<int, int>> checkingExistenceOfRing(GamePtr& game)
 
 		if (x < 0 || x >= game->width
 			|| y < 0 || y >= game->height
-			|| game->points[y][x].color != color)
+			|| game->points[y][x].color != color
+			|| game->points[y][x].whoCaptured != color)
 		{
+			backWayPoints.pop();
 			ololoTheWay.pop();
 			continue;
 		}
@@ -114,7 +133,14 @@ std::vector<std::pair<int, int>> checkingExistenceOfRing(GamePtr& game)
 					res.push_back(point);
 				}
 			}
-			return res;
+			if (res.size() > 3)
+			{
+				return res;
+			}
+			else
+			{
+				return {};
+			}
 		}
 
 		if (checkedPoints.find(point) != checkedPoints.end())
@@ -128,8 +154,9 @@ std::vector<std::pair<int, int>> checkingExistenceOfRing(GamePtr& game)
 		{
 			for (int offset_x = -1; offset_x <= 1; offset_x++)
 			{
-				if ((offset_x == offset_y && offset_y == 0)
-					|| Point(x + offset_x, y + offset_y) == lastPoint)
+				if ((!isFree(x + offset_x, y + offset_y))
+					|| (offset_x == offset_y && offset_y == 0)
+					|| (Point(x + offset_x, y + offset_y) == lastPoint))
 				{
 					continue;
 				}
@@ -184,6 +211,20 @@ std::vector<std::pair<int, int>> findOtherColors(GamePtr& game, std::vector<std:
 
 	std::vector<Point> res;
 
+	auto isFree = [&game, color](int x, int y) -> bool
+	{
+		if (x < 0 || x >= game->width
+			|| y < 0 || y >= game->height)
+		{
+			return false;
+		}
+		if (game->points[y][x].color == color)
+		{
+			return false;
+		}
+		return true;
+	};
+
 	while (!suspectPoints.empty())
 	{
 		auto point = suspectPoints.front();
@@ -192,9 +233,7 @@ std::vector<std::pair<int, int>> findOtherColors(GamePtr& game, std::vector<std:
 		int x = point.first;
 		int y = point.second;
 
-		if (x < 0 || x >= game->width
-			|| y < 0 || y >= game->height
-			|| game->points[y][x].color == color)
+		if (game->points[y][x].color == color)
 		{
 			continue;
 		}
@@ -208,19 +247,28 @@ std::vector<std::pair<int, int>> findOtherColors(GamePtr& game, std::vector<std:
 		if (game->points[y][x].color != Color_Neutral)
 		{
 			res.push_back(point);
+			game->points[y][x].whoCaptured = color;
 		}
 
+		bool freeMatrix[3][3] = { false };
 		for (int offset_y = -1; offset_y <= 1; offset_y++)
 		{
 			for (int offset_x = -1; offset_x <= 1; offset_x++)
 			{
-				if (offset_x == offset_y && offset_y == 0)
-				{
-					continue;
-				}
-				suspectPoints.push({ x + offset_x, y + offset_y });
+				freeMatrix[offset_y + 1][offset_x + 1] = isFree(x + offset_x, y + offset_y);
 			}
 		}
+
+		if (freeMatrix[0][1]) suspectPoints.push({ x, y - 1 });
+		if (freeMatrix[2][1]) suspectPoints.push({ x, y + 1 });
+		if (freeMatrix[1][0]) suspectPoints.push({ x - 1, y });
+		if (freeMatrix[1][2]) suspectPoints.push({ x + 1, y });
+
+
+		if (freeMatrix[0][0] && (freeMatrix[0][1] || freeMatrix[1][0])) suspectPoints.push({ x - 1, y - 1 });
+		if (freeMatrix[0][2] && (freeMatrix[0][1] || freeMatrix[1][2])) suspectPoints.push({ x + 1, y - 1 });
+		if (freeMatrix[2][0] && (freeMatrix[1][0] || freeMatrix[2][1])) suspectPoints.push({ x - 1, y + 1 });
+		if (freeMatrix[2][2] && (freeMatrix[2][1] || freeMatrix[1][2])) suspectPoints.push({ x + 1, y + 1 });
 	}
 
 	return res;

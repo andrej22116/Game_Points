@@ -243,3 +243,22 @@ void repaintPoint(RenderContext& renderContext, int x, int y, PointColor color)
 	drawPoint(renderContext.baseBuffer->hDC, pos_x, pos_y, color);
 	InvalidateRect(renderContext.hWnd, nullptr, false);
 }
+
+void paintLines(RenderContext& renderContext, std::vector<std::pair<int, int>>& points, PointColor color)
+{
+	if (color == Color_Blue)
+	{
+		SelectObject(renderContext.baseBuffer->hDC, g_RenderInstruments.hBluePen);
+	}
+	else
+	{
+		SelectObject(renderContext.baseBuffer->hDC, g_RenderInstruments.hRedPen);
+	}
+
+	for (int i = 0, size = points.size() - 1; i < size; i++)
+	{
+		drawLine(renderContext.baseBuffer->hDC,
+			points[i].first * g_CellSize + g_freeBorderSone, points[i].second * g_CellSize + g_freeBorderSone,
+			points[i + 1].first * g_CellSize + g_freeBorderSone, points[i + 1].second * g_CellSize + g_freeBorderSone);
+	}
+}

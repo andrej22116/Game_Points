@@ -7,6 +7,7 @@ enum PointColor {
 };
 
 struct GamePoint {
+	PointColor whoCaptured;
 	PointColor color;
 	bool isFree;
 };

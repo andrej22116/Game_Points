@@ -46,6 +46,7 @@ void createPensAndBrushes();
 void destroyPensAndBrushes();
 
 void repaintPoint(RenderContext& renderContext, int x, int y, PointColor color);
+void paintLines(RenderContext& renderContext, std::vector<std::pair<int, int>>& points, PointColor color);
 
 void beginPaint(RenderContext& renderContext);
 void endPaint(RenderContext& renderContext);
