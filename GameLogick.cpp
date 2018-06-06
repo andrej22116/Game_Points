@@ -68,10 +68,9 @@ std::vector<std::pair<int, int>> checkingExistenceOfRing(GamePtr& game)
 	using Point = std::pair<int, int>;
 	Point firstSuspectPoint = game->mouseHover;
 	PointColor color = game->points[game->mouseHover.second][game->mouseHover.first].color;
-	std::stack<Point> suspectedPoints;
-	std::stack<Point> ololoTheWay;
-	std::stack<Point> backWayPoints;
 	std::set<Point> checkedPoints;
+
+	std::vector<std::pair<int, int>> res;
 
 	auto isFree = [&game, color](int x, int y) -> bool
 	{
@@ -89,118 +88,64 @@ std::vector<std::pair<int, int>> checkingExistenceOfRing(GamePtr& game)
 		return true;
 	};
 
-	suspectedPoints.push(firstSuspectPoint);
-	while (!suspectedPoints.empty())
+	auto find = [&game, &checkedPoints, &res, color, firstSuspectPoint, isFree](Point point) -> void
 	{
-		auto point = suspectedPoints.top();
-		suspectedPoints.pop();
-
-		Point lastPoint;
-		if (backWayPoints.empty())
+		auto subFind = [&game, &checkedPoints, &res, color, firstSuspectPoint, isFree]
+		(Point point, int depth, auto find) -> bool
 		{
-			lastPoint = { -1, -1 };
-		}
-		else
-		{
-			lastPoint = backWayPoints.top();
-			backWayPoints.pop();
-		}
+			if (point == firstSuspectPoint && depth >= 4) return true;
 
-		int x = point.first;
-		int y = point.second;
+			if (!isFree(point.first, point.second)) return false;
+			if (checkedPoints.find(point) != checkedPoints.end()) return false;
+			checkedPoints.insert(point);
 
-		if (point == firstSuspectPoint && checkedPoints.size() > 3)
-		{
-			std::vector<std::pair<int, int>> res;
-			while (!ololoTheWay.empty())
+			for (int offset_y = -1; offset_y <= 1; offset_y++)
 			{
-				point = ololoTheWay.top();
-				ololoTheWay.pop();
-				if (game->points[point.second][point.first].color == color && checkedPoints.find(point) != checkedPoints.end())
+				for (int offset_x = -1; offset_x <= 1; offset_x++)
 				{
-					checkedPoints.erase(point);
-					res.push_back(point);
+					Point nextPoint(point.first + offset_x, point.second + offset_y);
+					if (find(nextPoint, depth + 1, find))
+					{
+						res.push_back(nextPoint);
+						return true;
+					}
 				}
 			}
-			if (res.size() > 3)
-			{
-				return res;
-			}
-			else
-			{
-				return {};
-			}
-		}
 
-		if (checkedPoints.find(point) != checkedPoints.end())
-		{
-			ololoTheWay.pop();
-			continue;
-		}
-		checkedPoints.insert(point);
+			return false;
+		};
 
-		bool hasFirstPoint = false;
-		Point firstPoint;
-		bool hasNextPoints = false;
-		for (int offset_y = -1; offset_y <= 1; offset_y++)
-		{
-			for (int offset_x = -1; offset_x <= 1; offset_x++)
-			{
-				Point nextPoint(x + offset_x, y + offset_y);
-				if ((!isFree(x + offset_x, y + offset_y))
-					|| (offset_x == offset_y && offset_y == 0)
-					|| (nextPoint == lastPoint))
-				{
-					continue;
-				}
-				if (nextPoint == firstSuspectPoint)
-				{
-					hasNextPoints = true;
-					firstPoint = nextPoint;
-					hasFirstPoint = true;
-					continue;
-				}
-				hasNextPoints = true;
-				suspectedPoints.push(nextPoint);	
-				ololoTheWay.push(point);
-				backWayPoints.push(point);
-			}
-		}
+		subFind(point, 1, subFind);
+	};
 
-		if (!hasNextPoints && !ololoTheWay.empty())
-		{
-			ololoTheWay.pop();
-		}
+	find(firstSuspectPoint);
 
-		if (hasFirstPoint)
-		{
-			suspectedPoints.push(firstPoint);
-			ololoTheWay.push(point);
-			backWayPoints.push(point);
-		}
-	}
-
-	return {};
+	return res;
 }
 
 void modifyExistenceOfRing(std::vector<std::pair<int, int>>& way)
 {
-	for (int i = 0; i < way.size() - 2;)
+	for (int lol = 0; lol < 2; lol++)
 	{
-		if ((way[i].second == way[i + 1].second && way[i + 1].first == way[i + 2].first)
-			|| (way[i].first == way[i + 1].first && way[i + 1].second == way[i + 2].second))
+		for (int i = 0; i < way.size() - 2;)
 		{
-			way.erase(way.begin() + i + 1);
+			if ((way[i].second == way[i + 1].second && way[i + 1].first == way[i + 2].first)
+				|| (way[i].first == way[i + 1].first && way[i + 1].second == way[i + 2].second))
+			{
+				way.erase(way.begin() + i + 1);
+			}
+			else if ((way[i].first == way[i + 2].first && way[i].second == way[i + 1].second)
+				|| (way[i].first == way[i + 2].first && way[i + 1].second == way[i + 2].second))
+			{
+				way.erase(way.begin() + i + 1, way.begin() + i + 2);
+			}
+			else
+			{
+				i++;
+			}
 		}
-		else if ((way[i].first == way[i + 2].first && way[i].second == way[i + 1].second)
-			|| (way[i].first == way[i + 2].first && way[i + 1].second == way[i + 2].second))
-		{
-			way.erase(way.begin() + i + 1, way.begin() + i + 2);
-		}
-		else
-		{
-			i++;
-		}
+
+		std::rotate(way.begin(), way.end() - 1, way.end());
 	}
 
 	way.push_back(way[0]);
