@@ -29,4 +29,10 @@ struct Game {
 	std::pair<int, int> mouseHover;
 };
 
+struct GameSetings {
+	int width;
+	int height;
+	bool sounds;
+};
+
 using GamePtr = std::unique_ptr<Game>;

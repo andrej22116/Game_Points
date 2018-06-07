@@ -77,7 +77,7 @@ RenderContext makeRenderContext(HWND hWnd, GamePtr& game)
 
 	initialDrawField(renderCtx, game);
 	ReleaseDC(hWnd, hBaseDC);
-
+	
 	return renderCtx;
 }
 

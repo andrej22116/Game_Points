@@ -44,6 +44,7 @@
     <ClInclude Include="Constants.h">
       <Filter>Исходные файлы</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Coptyug_Points.cpp">
@@ -61,5 +62,10 @@
     <ClCompile Include="GameLogick.cpp">
       <Filter>Исходные файлы\GameLogick</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Coptyug_Points.rc">
+      <Filter>Файлы ресурсов</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>
