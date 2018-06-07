@@ -3,7 +3,9 @@
 enum PointColor {
 	Color_Neutral,
 	Color_Blue,
-	Color_Red
+	Color_Red,
+	Color_LightBlue,
+	Color_LightRed
 };
 
 struct GamePoint {
@@ -16,6 +18,8 @@ struct Game {
 	std::vector<std::vector<GamePoint>> points;
 	int width;
 	int height;
+	int pointsAmount;
+	int freePoints;
 
 	int redScore;
 	int blueScore;

@@ -47,6 +47,9 @@ void destroyPensAndBrushes();
 
 void repaintPoint(RenderContext& renderContext, int x, int y, PointColor color);
 void paintLines(RenderContext& renderContext, std::vector<std::pair<int, int>>& points, PointColor color);
+void drawWhoMove(RenderContext& rendererContext, GamePtr& game);
+void drawScores(RenderContext& rendererContext, GamePtr& game);
+void drawHoverPoint(RenderContext& rendererContext, GamePtr& game);
 
 void beginPaint(RenderContext& renderContext);
 void endPaint(RenderContext& renderContext);

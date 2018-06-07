@@ -7,14 +7,20 @@ struct RenderInstruments {
 	HPEN hWhitePen;
 	HPEN hBlackPen;
 	HPEN hRedPen;
+	HPEN hRedLightPen;
 	HPEN hBluePen;
+	HPEN hBlueLightPen;
 
 	HBRUSH hWhiteBrush;
 	HBRUSH hBlackBrush;
 	HBRUSH hRedBrush;
+	HBRUSH hRedLightBrush;
 	HBRUSH hBlueBrush;
+	HBRUSH hBlueLightBrush;
 
 	HBRUSH hGrayBrush;
+
+	HFONT hFont;
 } g_RenderInstruments;
 
 
@@ -118,6 +124,16 @@ inline void drawPoint(HDC hDC, int x, int y, PointColor color)
 		SelectObject(hDC, g_RenderInstruments.hBlueBrush);
 		SelectObject(hDC, g_RenderInstruments.hBluePen);
 	} break;
+	case Color_LightRed: {
+		radius = g_PointBigRadius;
+		SelectObject(hDC, g_RenderInstruments.hRedLightBrush);
+		SelectObject(hDC, g_RenderInstruments.hRedLightPen);
+	} break;
+	case Color_LightBlue: {
+		radius = g_PointBigRadius;
+		SelectObject(hDC, g_RenderInstruments.hBlueLightBrush);
+		SelectObject(hDC, g_RenderInstruments.hBlueLightPen);
+	} break;
 	}
 
 	Ellipse(hDC, x - radius, y - radius, x + radius + 1, y + radius + 1);
@@ -182,11 +198,15 @@ void createPensAndBrushes()
 	g_RenderInstruments.hBlackPen = CreatePen(PS_SOLID, g_BaseLineWidth, RGB(0, 0, 0));
 	g_RenderInstruments.hRedPen = CreatePen(PS_SOLID, g_BorderLineWidth, g_RedColor);
 	g_RenderInstruments.hBluePen = CreatePen(PS_SOLID, g_BorderLineWidth, g_BlueColor);
+	g_RenderInstruments.hRedLightPen = CreatePen(PS_SOLID, g_BorderLineWidth, g_RedLightColor);
+	g_RenderInstruments.hBlueLightPen = CreatePen(PS_SOLID, g_BorderLineWidth, g_BlueLightColor);
 
 	g_RenderInstruments.hWhiteBrush = CreateSolidBrush(RGB(255, 255, 255));
 	g_RenderInstruments.hBlackBrush = CreateSolidBrush(RGB(0, 0, 0));
 	g_RenderInstruments.hRedBrush = CreateSolidBrush(g_RedFillColor);
 	g_RenderInstruments.hBlueBrush = CreateSolidBrush(g_BlueFillColor);
+	g_RenderInstruments.hRedLightBrush = CreateSolidBrush(g_RedLightColor);
+	g_RenderInstruments.hBlueLightBrush = CreateSolidBrush(g_BlueLightColor);
 
 	g_RenderInstruments.hGrayBrush = CreateSolidBrush(RGB(125, 125, 140));
 }
@@ -200,11 +220,15 @@ void destroyPensAndBrushes()
 	DeleteObject(g_RenderInstruments.hBlackPen);
 	DeleteObject(g_RenderInstruments.hRedPen);
 	DeleteObject(g_RenderInstruments.hBluePen);
+	DeleteObject(g_RenderInstruments.hRedLightPen);
+	DeleteObject(g_RenderInstruments.hBlueLightPen);
 
 	DeleteObject(g_RenderInstruments.hWhiteBrush);
 	DeleteObject(g_RenderInstruments.hBlackBrush);
 	DeleteObject(g_RenderInstruments.hRedBrush);
 	DeleteObject(g_RenderInstruments.hBlueBrush);
+	DeleteObject(g_RenderInstruments.hRedLightBrush);
+	DeleteObject(g_RenderInstruments.hBlueLightBrush);
 
 	DeleteObject(g_RenderInstruments.hGrayBrush);
 }
@@ -262,3 +286,97 @@ void paintLines(RenderContext& renderContext, std::vector<std::pair<int, int>>& 
 			points[i + 1].first * g_CellSize + g_freeBorderSone, points[i + 1].second * g_CellSize + g_freeBorderSone);
 	}
 }
+
+void drawWhoMove(RenderContext& rendererContext, GamePtr& game)
+{
+	std::string hwoMove;
+	SetBkMode(rendererContext.screenBuffer->hDC, TRANSPARENT);
+	HBRUSH fillBrush = nullptr;
+	
+	switch (game->whoseMove)
+	{
+	case Color_Blue: {
+		hwoMove = "Ход синего игрока!";
+		fillBrush = g_RenderInstruments.hBlueBrush;
+		SetTextColor(rendererContext.screenBuffer->hDC, g_BlueTextColor);
+	} break;
+	case Color_Red: {
+		hwoMove = "Ход красного игрока!";
+		fillBrush = g_RenderInstruments.hRedBrush;
+		SetTextColor(rendererContext.screenBuffer->hDC, g_RedTextColor);
+	} break;
+	}
+
+	SIZE textSize;
+	GetTextExtentPoint32(
+		rendererContext.screenBuffer->hDC,
+		hwoMove.c_str(),
+		hwoMove.size(),
+		&textSize);
+
+	RECT rectForDrawText = rendererContext.clientRect;
+	rectForDrawText.bottom = textSize.cy + 10;
+
+	FillRect(rendererContext.screenBuffer->hDC, &rectForDrawText, fillBrush);
+	DrawText(rendererContext.screenBuffer->hDC,
+		hwoMove.c_str(),
+		hwoMove.size(),
+		&rectForDrawText,
+		DT_CENTER | DT_VCENTER
+	);
+}
+
+void drawScores(RenderContext& rendererContext, GamePtr& game)
+{
+	SetBkMode(rendererContext.screenBuffer->hDC, TRANSPARENT);
+	std::string info = "  Красный игрок: " + std::to_string(game->redScore);
+
+	SIZE textSize;
+	GetTextExtentPoint32(
+		rendererContext.screenBuffer->hDC,
+		info.c_str(),
+		info.size(),
+		&textSize);
+
+	RECT rectForDrawText = rendererContext.clientRect;
+	rectForDrawText.bottom = textSize.cy + 10;
+
+	SetTextColor(rendererContext.screenBuffer->hDC, g_RedTextColor);
+	DrawText(rendererContext.screenBuffer->hDC,
+		info.c_str(),
+		info.size(),
+		&rectForDrawText,
+		DT_LEFT | DT_VCENTER
+	);
+
+	info = "Синий игрок: " + std::to_string(game->blueScore) + "  ";
+	SetTextColor(rendererContext.screenBuffer->hDC, g_BlueTextColor);
+	DrawText(rendererContext.screenBuffer->hDC,
+		info.c_str(),
+		info.size(),
+		&rectForDrawText,
+		DT_RIGHT | DT_VCENTER
+	);
+}
+
+void drawHoverPoint(RenderContext& rendererContext, GamePtr& game)
+{
+	if (!game->isHover) { return; }
+	if (game->points[game->mouseHover.second][game->mouseHover.first].color) { return; }
+	if (game->points[game->mouseHover.second][game->mouseHover.first].whoCaptured) { return; }
+
+	int point_x = g_freeBorderSone + game->mouseHover.first * g_CellSize;
+	int point_y = g_freeBorderSone + game->mouseHover.second * g_CellSize;
+
+	switch (game->whoseMove)
+	{
+	case Color_Blue: {
+		drawPoint(rendererContext.activeBuffer->hDC, point_x, point_y, Color_LightBlue);
+	} break;
+	case Color_Red: {
+		drawPoint(rendererContext.activeBuffer->hDC, point_x, point_y, Color_LightRed);
+	} break;
+	}
+	
+}
+

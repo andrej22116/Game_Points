@@ -23,6 +23,8 @@ GamePtr createGame(int width, int height)
 		}
 	}
 
+	game->freePoints = game->pointsAmount = width * height;
+
 	return game;
 }
 
@@ -30,10 +32,10 @@ GamePtr createGame(int width, int height)
 void updateMouseInfo(GamePtr& game, RenderContext& renderContext, int x, int y)
 {
 	int start_x = renderContext.fieldPos_x + g_freeBorderSone - g_CellSize / 2;
-	int end_x = start_x + game->width * g_CellSize;
+	int end_x = start_x + game->width * g_CellSize - 1;
 
 	int start_y = renderContext.fieldPos_y + g_freeBorderSone - g_CellSize / 2;
-	int end_y = start_y + game->height * g_CellSize;
+	int end_y = start_y + game->height * g_CellSize - 1;
 
 	if (x < start_x || x > end_x || y < start_y || y > end_y)
 	{
@@ -58,6 +60,7 @@ bool mouseClickProcessing(GamePtr& game)
 
 	game->points[y][x].color = game->whoseMove;
 	game->points[y][x].whoCaptured = game->whoseMove;
+	game->freePoints--;
 
 	return true;
 }
@@ -199,16 +202,30 @@ std::vector<std::pair<int, int>> findOtherColors(GamePtr& game, std::vector<std:
 		int x = point.first;
 		int y = point.second;
 
-		if (game->points[y][x].color == color)
-		{
-			continue;
-		}
-
 		if (checkedPoints.find(point) != checkedPoints.end())
 		{
 			continue;
 		}
 		checkedPoints.insert(point);
+
+		if (color == Color_Blue)
+		{
+			if (game->points[y][x].whoCaptured == Color_Red)
+			{
+				if (game->points[y][x].color == Color_Red) game->blueScore++;
+				else if (game->points[y][x].color == Color_Blue) game->redScore--;
+			}
+		}
+		else if (color == Color_Red)
+		{
+			if (game->points[y][x].whoCaptured == Color_Blue)
+			{
+				if (game->points[y][x].color == Color_Blue) game->redScore++;
+				else if (game->points[y][x].color == Color_Red) game->blueScore--;
+			}
+		}
+
+		if (!game->points[y][x].color) game->freePoints--;
 
 		game->points[y][x].whoCaptured = color;
 		game->points[y][x].isFree = false;
