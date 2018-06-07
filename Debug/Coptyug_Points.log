@@ -1,2 +1,9 @@
-﻿  Coptyug_Points.cpp
+﻿  stdafx.cpp
+  Coptyug_Points.cpp
+  GameLogick.cpp
+z:\coptyug_points\coptyug_points\gamelogick.cpp(133): warning C4018: <: несоответствие типов со знаком и без знака
+z:\coptyug_points\coptyug_points\gamelogick.cpp(162): warning C4018: <: несоответствие типов со знаком и без знака
+  Render.cpp
+  datastructures.cpp
+  Создание кода...
   Coptyug_Points.vcxproj -> Z:\Coptyug_Points\Debug\Coptyug_Points.exe

@@ -68,4 +68,9 @@
       <Filter>Файлы ресурсов</Filter>
     </ResourceCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Media Include="src\sound.wav">
+      <Filter>Файлы ресурсов</Filter>
+    </Media>
+  </ItemGroup>
 </Project>
